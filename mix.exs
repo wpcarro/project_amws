@@ -12,10 +12,8 @@ defmodule ProjectAmws.Mixfile do
 
 
   def application do
-    [
-      extra_applications: [:logger],
-      env: build_secret_env()
-    ]
+    [extra_applications: [:logger, :httpotion],
+     env: build_secret_env()]
   end
 
   @spec build_secret_env() :: [key: String.t]
@@ -50,6 +48,8 @@ defmodule ProjectAmws.Mixfile do
 
 
   defp deps do
-    []
+    [
+      {:httpotion, "~> 3.0.2"}
+    ]
   end
 end
