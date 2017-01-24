@@ -15,26 +15,157 @@ defmodule Web do
       "SubmitFeed"
     ],
     "Reports": [
+      "GetReport",
+      "GetReportCount",
+      "GetReportList",
+      "GetReportListByNextToken",
+      "GetReportRequestCount",
+      "GetReportRequestList",
+      "GetReportRequestListByNextToken",
+      "CancelReportRequests",
+      "RequestReport",
+      "ManageReportSchedule",
+      "GetReportScheduleList",
+      "GetReportScheduleListByNextToken",
+      "GetReportScheduleCount",
+      "UpdateReportAcknowledgements"
     ],
-    "Fulfillment": [],
-    "Orders": [],
-    "Sellers": [],
-    "Products": [],
-    "Recommendations": [],
-    "Subscriptions": [],
-    "Off-Amazon Payments Sandbox": [],
-    "Off-Amazon Payments": []
+    "Fulfillment": [
+      fulfillment_inbound: [
+        "GetServiceStatus",
+        "GetPreorderInfo",
+        "ConfirmPreorder",
+        "ConfirmTransportRequest",
+        "CreateInboundShipment",
+        "CreateInboundShipmentPlan",
+        "EstimateTransportRequest",
+        "GetBillOfLading",
+        "GetPalletLabels",
+        "GetPackageLabels",
+        "GetUniquePackageLabels",
+        "GetTransportContent",
+        "ListInboundShipmentItems",
+        "ListInboundShipmentItemsByNextToken",
+        "ListInboundShipments",
+        "ListInboundShipmentsByNextToken",
+        "PutTransportContent",
+        "VoidTransportRequest",
+        "UpdateInboundShipment",
+        "GetPrepInstructionsForSKU",
+        "GetPrepInstructionsForASIN",
+        "GetInboundGuidanceForASIN",
+        "GetInboundGuidanceForSKU"
+      ],
+      fulfillment_inventory: [
+        "GetServiceStatus",
+        "ListInventorySupply",
+        "ListInventorySupplyByNextToken",
+      ],
+      fulfillment_outbound: [
+        "GetServiceStatus",
+        "CancelFulfillmentOrder",
+        "CreateFulfillmentOrder",
+        "UpdateFulfillmentOrder",
+        "GetFulfillmentOrder",
+        "GetFulfillmentPreview",
+        "GetPackageTrackingDetails",
+        "ListAllFulfillmentOrders",
+        "ListAllFulfillmentOrdersByNextToken",
+        "CreateFulfillmentReturn",
+        "ListReturnReasonCodes",
+      ]
+    ],
+    "Orders": [
+      "GetServiceStatus",
+      "ListOrders",
+      "ListOrdersByNextToken",
+      "GetOrder",
+      "ListOrderItems",
+      "ListOrderItemsByNextToken"
+    ],
+    "Sellers": [
+      "Sellers Retrieval",
+      "GetServiceStatus",
+      "ListMarketplaceParticipations",
+      "ListMarketplaceParticipationsByNextToken"
+    ],
+    "Products": [
+      "GetServiceStatus",
+      "ListMatchingProducts",
+      "GetMatchingProduct",
+      "GetMatchingProductForId",
+      "GetCompetitivePricingForSKU",
+      "GetCompetitivePricingForASIN",
+      "GetLowestPricedOffersForSKU",
+      "GetLowestPricedOffersForASIN",
+      "GetLowestOfferListingsForSKU",
+      "GetLowestOfferListingsForASIN",
+      "GetMyFeesEstimate",
+      "GetMyPriceForSKU",
+      "GetMyPriceForASIN",
+      "GetProductCategoriesForSKU",
+      "GetProductCategoriesForASIN"
+    ],
+    "Recommendations": [
+      "GetServiceStatus",
+      "GetLastUpdatedTimeForRecommendations",
+      "ListRecommendations",
+      "ListRecommendationsByNextToken"
+    ],
+    "Subscriptions": [
+      "Destinations",
+      "GetServiceStatus",
+      "RegisterDestination",
+      "DeregisterDestination",
+      "ListRegisteredDestinations",
+      "SendTestNotificationToDestination",
+      "Subscriptions",
+      "CreateSubscription",
+      "GetSubscription",
+      "DeleteSubscription",
+      "ListSubscriptions",
+      "UpdateSubscription"
+    ],
+    "Off-Amazon Payments": [
+      "OffAmazonPayments",
+      "GetServiceStatus",
+      "GetOrderReferenceDetails",
+      "SetOrderReferenceDetails",
+      "ConfirmOrderReference",
+      "CancelOrderReference",
+      "CloseOrderReference",
+      "Authorize",
+      "GetAuthorizationDetails",
+      "CloseAuthorization",
+      "Capture",
+      "GetCaptureDetails",
+      "Refund",
+      "GetRefundDetails",
+      "CreateOrderReferenceForId",
+      "GetBillingAgreementDetails",
+      "SetBillingAgreementDetails",
+      "ConfirmBillingAgreement",
+      "ValidateBillingAgreement",
+      "AuthorizeOnBillingAgreement",
+      "CloseBillingAgreement"
+    ],
+    "Finances": [
+      "Finances",
+      "GetServiceStatus",
+      "ListFinancialEventGroups",
+      "ListFinancialEventGroupsByNextToken",
+      "ListFinancialEvents",
+      "ListFinancialEventsByNextToken"
+    ]
+    "Merchant Fulfillment": [
+      "Merchant Fulfillment",
+      "GetServiceStatus",
+      "GetEligibleShippingServices",
+      "CreateShipment",
+      "GetShipment",
+      "CancelShipment"
+    ]
   }
-
-POST /?AWSAccessKeyId=AKIAIA5G4UHWLURF3FUQ
-  &Action=GetReportList
-  &Merchant=A2PVRGI9GXOFMB
-  &MWSAuthToken=4457-4543-1111
-  &SignatureVersion=2
-  &Timestamp=2017-01-23T05%3A33%3A49Z
-  &Version=2009-01-01
-  &Signature=oS6JevFUkHmLp%2BRB6GyuiisUS5VNg9ICuoX5VmoKwq4%3D
-
 
 
   @spec get_credentials() :: [key: String.t]
