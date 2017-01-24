@@ -175,8 +175,11 @@ defmodule Web do
   end
 
 
-  def get_skus() do
-    get_credentials()
+  def sign_data(data) when is_binary(data) do
+    key =
+      Application.get_env(:project_amws, :secret_key)
+
+    :crypto.hmac(:sha256, key, data)
   end
 
 
