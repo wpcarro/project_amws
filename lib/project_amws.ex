@@ -3,6 +3,9 @@ defmodule ProjectAmws do
   Documentation for ProjectAmws.
   """
 
+  alias Web
+
+
   @doc """
   Hello world.
 

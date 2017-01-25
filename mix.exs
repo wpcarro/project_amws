@@ -12,8 +12,24 @@ defmodule ProjectAmws.Mixfile do
 
 
   def application do
-    [extra_applications: [:logger, :httpotion],
-     env: build_secret_env()]
+    non_secret_env = [
+      app_name: "velocity_sellers",
+      app_version: "0.1",
+      app_language: "Elixir",
+      app_language_version: "1.4",
+      app_platform: "Mac OS X",
+    ]
+
+    secret_env =
+      build_secret_env()
+
+    env =
+      Keyword.merge(non_secret_env, secret_env)
+
+    [
+      extra_applications: [:logger, :httpotion],
+      env: env
+    ]
   end
 
   @spec build_secret_env() :: [key: String.t]

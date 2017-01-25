@@ -1,8 +1,34 @@
 defmodule Web do
+  @moduledoc """
+  This module contains functions for making API request to Amazon's MWS.
+
+  The basic sections are:
+
+  - Feeds
+  - Reports
+  - Fulfillment
+    - fulfillment_inbound
+    - fulfillment_inventory
+    - fulfillment_outbound
+  - Orders
+  - Sellers
+  - Products
+  - Recommendations
+  - Subscriptions
+  - Off-Amazon Payments
+  - Finances
+  - Merchant Fulfillment
+
+  """
 
   @endpoint "https://mws.amazonservices.com"
   @us_marketplace_id "ATVPDKIKX0DER"
-  @credential_keys ~w(seller_id developer_id aws_key secret_key)a
+
+  @app_name Application.get_env(:project_amws, :app_name)
+  @app_version Application.get_env(:project_amws, :app_version)
+  @app_language Application.get_env(:project_amws, :app_language)
+  @app_language_version Application.get_env(:project_amws, :app_language_version)
+  @app_platform Application.get_env(:project_amws, :app_platform)
 
 
   @api_section_to_operations %{
@@ -156,7 +182,7 @@ defmodule Web do
       "ListFinancialEventGroupsByNextToken",
       "ListFinancialEvents",
       "ListFinancialEventsByNextToken"
-    ]
+    ],
     "Merchant Fulfillment": [
       "Merchant Fulfillment",
       "GetServiceStatus",
@@ -168,13 +194,48 @@ defmodule Web do
   }
 
 
-  @spec get_credentials() :: [key: String.t]
-  def get_credentials() do
-    @credential_keys
-    |> Enum.reduce([], &Keyword.put(&2, &1, Application.get_env(:project_amws, &1)))
+  @spec build_user_agent() :: String.t
+  def build_user_agent() do
+    name =
+      @app_name
+
+    version =
+      @app_version
+
+    language =
+      @app_language
+
+    platform =
+      @app_platform
+
+    do_build_user_agent(name, version, language, platform)
+  end
+
+  @spec do_build_user_agent(String.t, String.t, String.t, String.t) :: String.t
+  defp do_build_user_agent(name, version, language, platform) do
+    name_version =
+      name <> "/" <> version
+
+    app_language_info =
+      format_app_language_info(language, platform)
+
+    [name_version, app_language_info]
+    |> Enum.join(" ")
+  end
+
+  @spec format_app_language_info(String.t, String.t) :: String.t
+  defp format_app_language_info(language, platform) do
+    formatted_language =
+      "Language=" <> language
+
+    formatted_platform =
+      "Platform=" <> platform
+
+    "(" <> formatted_language <> "; " <> formatted_platform <> ")"
   end
 
 
+  @spec sign_data(binary) :: binary
   def sign_data(data) when is_binary(data) do
     key =
       Application.get_env(:project_amws, :secret_key)
