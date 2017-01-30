@@ -65,7 +65,9 @@ defmodule ProjectAmws.Mixfile do
 
   defp deps do
     [
-      {:httpotion, "~> 3.0.2"}
+      {:httpotion, "~> 3.0.2"},
+      {:timex, "~> 3.1"},
+      {:sweet_xml, "~> 0.6.4"},
     ]
   end
 end
