@@ -29,33 +29,89 @@ defmodule Web do
   @app_language_version Application.get_env(:project_amws, :app_language_version)
   @app_platform Application.get_env(:project_amws, :app_platform)
 
+  @merchant_listings_data "/tmp/merchant_listings_data.tsv"
+
   import SweetXml
 
+  require Logger
 
-  @spec get_reports() :: any
+
+  @doc """
+  Kicks off the task that downloads the Merchant Listings data and stores the
+  contents to disk to avoid making too many requests both in PROD and DEV
+  environments.
+
+  """
+  @spec run :: :ok | no_return
+  def run() do
+    if File.exists?(@merchant_listings_data) do
+      :ok
+    else
+      get_and_save_merchant_listings_data()
+    end
+  end
+
+  @spec get_and_save_merchant_listings_data() :: :ok | no_return
+  defp get_and_save_merchant_listings_data() do
+    Logger.info("[Web] Downloading Merchant Listings Data.")
+
+    file =
+      File.open!("/tmp/merchant_listings_data.tsv", [:write])
+
+    data =
+      get_reports()
+      |> Map.get("_GET_MERCHANT_LISTINGS_DATA_")
+      |> get_report_by_id()
+
+    IO.binwrite(file, data)
+
+    File.close(file)
+
+    Logger.info("[Web] Finished.")
+  end
+
+
+  @spec get_reports() :: map
   def get_reports() do
+    fetch("GetReportList")
+    |> SweetXml.parse()
+    |> get_report_names_and_ids()
+  end
+
+
+  @spec get_report_by_id(String.t) :: [String.t]
+  def get_report_by_id(id) do
+    fetch("GetReport", [ReportId: id])
+    # |> CSV.decode(headers: true, separator: ?\t)
+  end
+
+
+  @spec fetch(String.t, [{atom, any}]) :: String.t
+  defp fetch(action, params \\ []) do
+    assert_supported_action(action)
+
     signed_options =
       [
         AWSAccessKeyId: Application.get_env(:project_amws, :aws_key),
-        Action: "GetReportList",
+        Action: action,
         MWSAuthToken: Application.get_env(:project_amws, :developer_id),
         Merchant: Application.get_env(:project_amws, :seller_id),
         Version: "2009-01-01",
         Timestamp: gen_timestamp()
       ]
+      |> Keyword.merge(params)
       |> sign_data()
 
     url =
       @endpoint <> "?" <> URI.encode_query(signed_options)
 
-    HTTPotion.post!(url)
+    response =
+      HTTPotion.post!(url)
+
+    response.body
   end
 
-  def parse_response(%{body: body}) do
-    SweetXml.parse(body)
-  end
-
-  def get_report_names_and_ids(xml) do
+  defp get_report_names_and_ids(xml) do
     names =
       xml
       |> xpath(~x"//ReportType/text()"l)
@@ -63,11 +119,24 @@ defmodule Web do
 
     ids =
       xml
-      |> xpath(~x"//ReportRequestId/text()"l)
+      |> xpath(~x"//ReportId/text()"l)
       |> Enum.map(&to_string/1)
 
-    Enum.zip(ids, names)
+    Enum.zip(names, ids)
     |> Map.new()
+  end
+
+
+  @spec assert_supported_action(String.t) :: :ok | no_return
+  defp assert_supported_action(action) do
+    supported_actions =
+      ["GetReportList", "GetReport"]
+
+    if not(action in supported_actions) do
+      raise(ArgumentError, message: "Action, \"#{action}\" not supported. The following actions are currently supported: \"#{inspect(supported_actions)}\"")
+    else
+      :ok
+    end
   end
 
   @spec gen_timestamp() :: String.t

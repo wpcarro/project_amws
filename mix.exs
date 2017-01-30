@@ -68,6 +68,7 @@ defmodule ProjectAmws.Mixfile do
       {:httpotion, "~> 3.0.2"},
       {:timex, "~> 3.1"},
       {:sweet_xml, "~> 0.6.4"},
+      {:csv, "~> 1.4"}
     ]
   end
 end
