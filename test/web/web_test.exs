@@ -2,17 +2,6 @@ defmodule WebTest do
   use ExUnit.Case
 
 
-  test "assert_required_fields/1" do
-    fields =
-      [:name, :age, :weight]
-
-    input =
-      [name: "Brian Anon", age: 21, weight: 200]
-
-    assert Web.assert_required_fields(input, fields) == :ok
-    assert_raise(ArgumentError, fn -> Web.assert_required_fields(input, [:not_present]) end)
-  end
-
   test "amws_encode_query/1" do
     input = [
       this: "is a",
@@ -63,4 +52,6 @@ defmodule WebTest do
       {:Signature, _}
     ] = result
   end
+
+
 end
