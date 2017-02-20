@@ -11,7 +11,9 @@ defmodule Web do
   @app_language Application.get_env(:project_amws, :app_language)
   @app_language_version Application.get_env(:project_amws, :app_language_version)
   @app_platform Application.get_env(:project_amws, :app_platform)
+  @merchant_listings_data Application.get_env(:project_amws, :merchant_listings_data)
 
+  @db_path Application.get_env(:project_amws, :lookup_index_paths)
 
   import SweetXml
   require Logger
@@ -21,6 +23,108 @@ defmodule Web do
   Pings AMWS endpoint with a properly signed request object.
 
   """
+  @spec run :: :ok | no_return
+  def run() do
+  end
+
+
+
+  @doc """
+  WIP: initializes everything.
+
+  """
+  @spec init :: :ok | no_return
+  defp init() do
+    open_db!("reports")
+
+    :ok
+  end
+
+
+  @spec stream_merchant_listings_data() :: Enumerable.t
+  def stream_merchant_listings_data() do
+    db =
+      open_db!("reports")
+
+    download_merchant_listings_data!(use_cached: true)
+    |> Stream.map(&remove_invalid_chars/1)
+    |> CSV.decode(headers: true, separator: ?\t)
+    |> save_csv(db)
+  end
+
+
+  @spec open_db!(String.t) :: Rox.db_handle | no_return
+  def open_db!(name) do
+    IO.inspect(@db_path, label: "DB Path")
+
+    file_path =
+      Path.join(@db_path, "#{name}.rocksdb")
+
+    with {:ok, db} <- Rox.open(file_path, [create_if_missing: true], []) do
+      db
+    else
+      {:error, err} ->
+        raise("Error opening Rox: \n#{inspect(err)}")
+    end
+  end
+
+
+  @spec save_csv(Enumerable.t, pid) :: :ok | no_return
+  defp save_csv(csv, db) do
+    processed_csv =
+      Enum.into(csv, [])
+
+    Rox.put(db, "merchant_listings_data", processed_csv)
+  end
+
+
+  @spec download_merchant_listings_data!(Keyword.t) :: Enumerable.t | no_return
+  defp download_merchant_listings_data!(opts \\ []) do
+    if opts[:use_cached] and File.exists?(@merchant_listings_data) do
+      File.stream!(@merchant_listings_data)
+    else
+      Logger.info("[Web] Downloading Merchant Listings Data.")
+
+      file =
+        File.open!("/tmp/merchant_listings_data.tsv", [:write])
+
+      data =
+        get_reports()
+        |> Map.get("_GET_MERCHANT_LISTINGS_DATA_")
+        |> get_report_by_id()
+
+      IO.binwrite(file, data)
+
+      File.close(file)
+
+      Logger.info("[Web] Finished.")
+    end
+  end
+
+  @spec remove_invalid_chars(binary) :: String.t
+  defp remove_invalid_chars(row) when is_binary(row) do
+    row
+    |> String.split("")
+    |> Enum.filter(&String.valid?/1)
+    |> Enum.join("")
+  end
+
+
+  @spec get_reports() :: map
+  def get_reports() do
+    fetch("GetReportList")
+    |> SweetXml.parse()
+    |> get_report_names_and_ids()
+  end
+
+
+  @spec get_report_by_id(String.t) :: [String.t]
+  def get_report_by_id(id) do
+    fetch("GetReport", [ReportId: id])
+  end
+
+
+>>>>>>> origin/test
   @spec fetch(String.t, [{atom, any}]) :: String.t
   def fetch(action, params \\ []) do
     assert_supported_action(action)

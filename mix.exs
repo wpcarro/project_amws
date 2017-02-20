@@ -18,6 +18,8 @@ defmodule ProjectAmws.Mixfile do
       app_language: "Elixir",
       app_language_version: "1.4",
       app_platform: "Mac OS X",
+      merchant_listing_data: "/tmp/merchant_listings_data.tsv",
+      lookup_index_paths: Path.join(__DIR__, "data/lookup/"),
     ]
 
     secret_env =
@@ -68,7 +70,8 @@ defmodule ProjectAmws.Mixfile do
       {:httpotion, "~> 3.0.2"},
       {:timex, "~> 3.1"},
       {:sweet_xml, "~> 0.6.4"},
-      {:csv, "~> 1.4"}
+      {:csv, "~> 1.4"},
+      {:rox, github: "urbint/rox"}
     ]
   end
 end

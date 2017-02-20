@@ -9,6 +9,16 @@ defmodule Web.Report.MerchantListingsData do
 
   @behaviour Report
 
+  @fields [
+    "item-name", "item-description", "listing-id", "seller-sku", "price",
+    "quantity", "open-date", "image-url", "item-is-marketplace",
+    "product-id-type", "zshop-shipping-fee", "item-note", "item-condition",
+    "zshop-category1", "zshop-browse-path", "zshop-storefront-feature", "asin1",
+    "asin2", "asin3", "will-ship-internationally", "expedited-shipping",
+    "zshop-boldface", "product-id", "bid-for-featured-placement", "add-delete",
+    "pending-quantity", "fulfillment-channel", "merchant-shipping-group",
+  ]
+
   @merchant_listings_data "/tmp/merchant_listings_data.tsv"
   @merchant_listings_data_id "4231024711017210"
 
@@ -16,7 +26,7 @@ defmodule Web.Report.MerchantListingsData do
   def get_report() do
     filepath =
       if File.exists?(@merchant_listings_data) do
-      @merchant_listings_data
+        @merchant_listings_data
       else
         with :ok <- get_and_save_merchant_listings_data() do
           @merchant_listings_data
