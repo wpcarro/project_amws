@@ -5,7 +5,7 @@ defmodule Spreadsheet.ProfitBySKU do
 
   """
 
-  @behavior GenSpreadsheet
+  @behaviour GenSpreadsheet
 
 
   @fields [

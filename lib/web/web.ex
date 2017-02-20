@@ -4,130 +4,32 @@ defmodule Web do
 
   """
 
-  @endpoint "https://mws.amazonservices.com/"
+  require Logger
 
+  @endpoint "https://mws.amazonservices.com/"
   @app_name Application.get_env(:project_amws, :app_name)
   @app_version Application.get_env(:project_amws, :app_version)
   @app_language Application.get_env(:project_amws, :app_language)
   @app_language_version Application.get_env(:project_amws, :app_language_version)
   @app_platform Application.get_env(:project_amws, :app_platform)
-  @merchant_listings_data Application.get_env(:project_amws, :merchant_listings_data)
-
   @db_path Application.get_env(:project_amws, :lookup_index_paths)
 
-  import SweetXml
-  require Logger
-
 
   @doc """
-  Pings AMWS endpoint with a properly signed request object.
-
-  """
-  @spec run :: :ok | no_return
-  def run() do
-  end
-
-
-
-  @doc """
-  WIP: initializes everything.
+  WIP: initializes Web application.
 
   """
   @spec init :: :ok | no_return
-  defp init() do
+  def init() do
     open_db!("reports")
 
     :ok
   end
 
 
-  @spec stream_merchant_listings_data() :: Enumerable.t
-  def stream_merchant_listings_data() do
-    db =
-      open_db!("reports")
-
-    download_merchant_listings_data!(use_cached: true)
-    |> Stream.map(&remove_invalid_chars/1)
-    |> CSV.decode(headers: true, separator: ?\t)
-    |> save_csv(db)
-  end
-
-
-  @spec open_db!(String.t) :: Rox.db_handle | no_return
-  def open_db!(name) do
-    IO.inspect(@db_path, label: "DB Path")
-
-    file_path =
-      Path.join(@db_path, "#{name}.rocksdb")
-
-    with {:ok, db} <- Rox.open(file_path, [create_if_missing: true], []) do
-      db
-    else
-      {:error, err} ->
-        raise("Error opening Rox: \n#{inspect(err)}")
-    end
-  end
-
-
-  @spec save_csv(Enumerable.t, pid) :: :ok | no_return
-  defp save_csv(csv, db) do
-    processed_csv =
-      Enum.into(csv, [])
-
-    Rox.put(db, "merchant_listings_data", processed_csv)
-  end
-
-
-  @spec download_merchant_listings_data!(Keyword.t) :: Enumerable.t | no_return
-  defp download_merchant_listings_data!(opts \\ []) do
-    if opts[:use_cached] and File.exists?(@merchant_listings_data) do
-      File.stream!(@merchant_listings_data)
-    else
-      Logger.info("[Web] Downloading Merchant Listings Data.")
-
-      file =
-        File.open!("/tmp/merchant_listings_data.tsv", [:write])
-
-      data =
-        get_reports()
-        |> Map.get("_GET_MERCHANT_LISTINGS_DATA_")
-        |> get_report_by_id()
-
-      IO.binwrite(file, data)
-
-      File.close(file)
-
-      Logger.info("[Web] Finished.")
-    end
-  end
-
-  @spec remove_invalid_chars(binary) :: String.t
-  defp remove_invalid_chars(row) when is_binary(row) do
-    row
-    |> String.split("")
-    |> Enum.filter(&String.valid?/1)
-    |> Enum.join("")
-  end
-
-
-  @spec get_reports() :: map
-  def get_reports() do
-    fetch("GetReportList")
-    |> SweetXml.parse()
-    |> get_report_names_and_ids()
-  end
-
-
-  @spec get_report_by_id(String.t) :: [String.t]
-  def get_report_by_id(id) do
-    fetch("GetReport", [ReportId: id])
-  end
-
-
->>>>>>> origin/test
   @spec fetch(String.t, [{atom, any}]) :: String.t
   def fetch(action, params \\ []) do
-    assert_supported_action(action)
+    assert_supported_action!(action)
 
     signed_options =
       [
@@ -150,8 +52,72 @@ defmodule Web do
     response.body
   end
 
-  @spec assert_supported_action(String.t) :: :ok | no_return
-  defp assert_supported_action(action) do
+
+  @doc """
+  Replaces "+" separators with "%20" per AMWS reqs.
+
+  """
+  @spec amws_encode_query([{atom, any}]) :: String.t
+  def amws_encode_query(query) when is_list(query) do
+    query
+    |> URI.encode_query()
+    |> String.replace("+", "%20")
+    |> String.replace("*", "%2A")
+    |> String.replace("%7E","~")
+  end
+
+
+  @doc """
+  Signs requests for AMWS according to specs.
+
+  """
+  @spec sign_data([{atom, any}], String.t) :: [{atom, any}]
+  def sign_data(query, http_verb \\ "POST") when is_list(query) do
+    key =
+      Application.get_env(:project_amws, :secret_key)
+
+    query_string =
+      gen_canonicalized_query_string!(query)
+
+    string_to_sign =
+      [
+        http_verb,
+        "mws.amazonservices.com",
+        "/",
+        query_string
+      ]
+      |> Enum.join("\n")
+
+    signature =
+      :crypto.hmac(:sha256, key, string_to_sign)
+      |> Base.encode64()
+
+    gen_canonicalized_fields!(query) ++ [Signature: signature]
+  end
+
+  @spec open_db!(String.t) :: Rox.db_handle | no_return
+  defp open_db!(name) do
+    file_path =
+      Path.join(@db_path, "#{name}.rocksdb")
+
+    with {:ok, db} <- Rox.open(file_path, [create_if_missing: true], []) do
+      db
+    else
+      {:error, err} ->
+        raise("Error opening Rox: \n#{inspect(err)}")
+    end
+  end
+
+  @spec save_csv(Enumerable.t, pid) :: :ok | no_return
+  defp save_csv(csv, db) do
+    processed_csv =
+      Enum.into(csv, [])
+
+    Rox.put(db, "merchant_listings_data", processed_csv)
+  end
+
+  @spec assert_supported_action!(String.t) :: :ok | no_return
+  defp assert_supported_action!(action) do
     supported_actions =
       ["GetReportList", "GetReport"]
 
@@ -169,20 +135,8 @@ defmodule Web do
   end
 
   @spec build_user_agent() :: String.t
-  def build_user_agent() do
-    name =
-      @app_name
-
-    version =
-      @app_version
-
-    language =
-      @app_language
-
-    platform =
-      @app_platform
-
-    do_build_user_agent(name, version, language, platform)
+  defp build_user_agent() do
+    do_build_user_agent(@app_name, @app_version, @app_language, @app_platform)
   end
 
   @spec do_build_user_agent(String.t, String.t, String.t, String.t) :: String.t
@@ -208,23 +162,8 @@ defmodule Web do
     "(" <> formatted_language <> "; " <> formatted_platform <> ")"
   end
 
-
-  @doc """
-  Replaces "+" separators with "%20" per AMWS reqs.
-
-  """
-  @spec amws_encode_query([{atom, any}]) :: String.t
-  def amws_encode_query(query) when is_list(query) do
-    query
-    |> URI.encode_query()
-    |> String.replace("+", "%20")
-    |> String.replace("*", "%2A")
-    |> String.replace("%7E","~")
-  end
-
-
   @spec gen_canonicalized_query_string!([{atom, any}]) :: String.t | no_return
-  def gen_canonicalized_query_string!(query) do
+  defp gen_canonicalized_query_string!(query) do
     query
     |> gen_canonicalized_fields!()
     |> amws_encode_query()
@@ -251,30 +190,6 @@ defmodule Web do
       end
     end)
     :ok
-  end
-
-  @spec sign_data([{atom, any}], String.t) :: [{atom, any}]
-  def sign_data(query, http_verb \\ "POST") when is_list(query) do
-    key =
-      Application.get_env(:project_amws, :secret_key)
-
-    query_string =
-      gen_canonicalized_query_string!(query)
-
-    string_to_sign =
-      [
-        http_verb,
-        "mws.amazonservices.com",
-        "/",
-        query_string
-      ]
-      |> Enum.join("\n")
-
-    signature =
-      :crypto.hmac(:sha256, key, string_to_sign)
-      |> Base.encode64()
-
-    gen_canonicalized_fields!(query) ++ [Signature: signature]
   end
 
 

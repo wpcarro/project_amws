@@ -30,24 +30,23 @@ defmodule Spreadsheet.CostsBySKU do
 
   @spec compile :: Spreadsheet.table | no_return
   def compile do
-    with :ok <- get_report_dependencies() do
-      do_compile()
-    else
-      _ ->
-        Logger.warn("Trouble fetching dependencies for CostsBySKU Spreadsheet. Aborting.")
-    end
+    assert_report_dependencies!()
+
+    do_compile()
   end
 
   @spec do_compile :: Spreadsheet.table | no_return
   defp do_compile do
     skus =
-      MerchantListingsData.get_report()
+      MerchantListingsData.get_fields("seller-sku")
 
     product_names =
-      get_product_names(skus)
+      MerchantListingsData.get_fields("item-name")
 
     costs_per_unit =
-      get_costs_per_unit(skus)
+      MerchantListingsData.get_fields("price")
+      |> Stream.map(&compute_cost_per_unit/1)
+      |> Enum.into([])
 
     %{
       sku: [1, 2, 3],
@@ -56,31 +55,20 @@ defmodule Spreadsheet.CostsBySKU do
     }
   end
 
-  @spec get_report_dependencies() :: :ok | no_return
-  defp get_report_dependencies() do
+  @spec assert_report_dependencies! :: :ok | no_return
+  defp assert_report_dependencies! do
+    with :ok <- :ok do
+      :ok
+    else
+      _ -> Logger.warn("Trouble fetching dependencies for CostsBySKU Spreadsheet. Aborting.")
+    end
   end
 
-  @spec get_product_names([sku]) :: [product_name]
-  defp get_product_names(skus) do
-    skus
-    |> Stream.map(&get_product_name/1)
-    |> Enum.into([])
+  @spec compute_cost_per_unit(String.t) :: cost_per_unit
+  defp compute_cost_per_unit(price) do
+    # raise("Not implemented")
+    price
   end
 
-  @spec get_product_name(sku) :: product_name
-  defp get_product_name(sku) do
-    # make API call here
-  end
 
-  @spec get_costs_per_unit([sku]) :: [cost_per_unit]
-  defp get_costs_per_unit(skus) do
-    skus
-    |> Stream.map(&get_cost_per_unit/1)
-    |> Enum.into([])
-  end
-
-  @spec get_cost_per_unit(sku) :: cost_per_unit
-  defp get_cost_per_unit(sku) do
-    # make API call here
-  end
 end
