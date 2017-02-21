@@ -6,17 +6,33 @@ defmodule Web.Report.MerchantListingsData do
 
   require Logger
   alias Web.Report
+  alias __MODULE__
 
   @behaviour Report
 
-  @fields [
-    "item-name", "item-description", "listing-id", "seller-sku", "price",
-    "quantity", "open-date", "image-url", "item-is-marketplace",
-    "product-id-type", "zshop-shipping-fee", "item-note", "item-condition",
-    "zshop-category1", "zshop-browse-path", "zshop-storefront-feature", "asin1",
-    "asin2", "asin3", "will-ship-internationally", "expedited-shipping",
-    "zshop-boldface", "product-id", "bid-for-featured-placement", "add-delete",
-    "pending-quantity", "fulfillment-channel", "merchant-shipping-group",
+  @type t :: %{
+    item_name: String.t, item_description: String.t, listing_id: String.t,
+    seller_sku: String.t, price: float, quantity: non_neg_integer,
+    open_date: DateTime.t, image_url: String.t, item_is_marketplace: boolean,
+    product_id_type: String.t, zshop_shipping_fee: String.t, item_note: String.t,
+    item_condition: String.t, zshop_category1: any, zshop_browse_path: any,
+    zshop_storefront_feature: String.t, asin1: String.t,
+    asin2: String.t, asin3: String.t, will_ship_internationally: boolean,
+    expedited_shipping: String.t,
+    zshop_boldface: String.t, product_id: String.t,
+    bid_for_featured_placement: String.t, add_delete: String.t,
+    pending_quantity: String.t, fulfillment_channel: String.t,
+    merchant_shipping_group: String.t,
+  }
+
+  defstruct [
+    :item_name, :item_description, :listing_id, :seller_sku, :price, :quantity,
+    :open_date, :image_url, :item_is_marketplace, :product_id_type,
+    :zshop_shipping_fee, :item_note, :item_condition, :zshop_category1,
+    :zshop_browse_path, :zshop_storefront_feature, :asin1, :asin2, :asin3,
+    :will_ship_internationally, :expedited_shipping, :zshop_boldface,
+    :product_id, :bid_for_featured_placement, :add_delete, :pending_quantity,
+    :fulfillment_channel, :merchant_shipping_group,
   ]
 
   @merchant_listings_data "/tmp/merchant_listings_data.tsv"
@@ -32,11 +48,12 @@ defmodule Web.Report.MerchantListingsData do
   def init do
     with tid when is_integer(tid) <- :ets.new(@table_id, []) do
       get_report()
-      |> Stream.take(2)
-      |> Enum.reduce(%{}, &build_table/2)
+      |> Stream.map(&decode/1)
+      # |> Enum.reduce(@empty_table, &build_table/2)
       # |> save_table!()
     else
-      _ -> Logger.warn("Could not create table for Merchant Listings Data.")
+      _ ->
+        Logger.warn("Could not create table for Merchant Listings Data.")
     end
   end
 
@@ -54,7 +71,8 @@ defmodule Web.Report.MerchantListingsData do
     File.read!(filepath)
     |> String.split("\n")
     |> Stream.map(&remove_corrupt_string_data/1)
-    |> CSV.decode(headers: true, separator: ?\t)
+    |> Stream.drop(1)
+    |> CSV.decode(headers: false, separator: ?\t)
   end
 
   @spec get_fields(String.t) :: [String.t]
@@ -62,15 +80,87 @@ defmodule Web.Report.MerchantListingsData do
     :ets.lookup(@table_id, field)
   end
 
+
+  @doc """
+  Decodes a raw response from AMWS into `MerchantListingsData.t`
+  """
+  @time_format "{YYYY}-{0M}-{0D} {h24}:{m}:{s} {Zabbr}"
+  @spec decode(String.t) :: t
+  def decode(raw) do
+    [
+      item_name, item_description, listing_id, seller_sku, price, quantity,
+      open_date, image_url, item_is_marketplace, product_id_type,
+      zshop_shipping_fee, item_note, item_condition, zshop_category1,
+      zshop_browse_path, zshop_storefront_feature, asin1, asin2, asin3,
+      will_ship_internationally, expedited_shipping, zshop_boldface, product_id,
+      bid_for_featured_placement, add_delete, pending_quantity,
+      fulfillment_channel, merchant_shipping_group,
+    ] = raw
+
+    %MerchantListingsData{
+      item_name: item_name |> empty_as_nil(),
+      item_description: item_description |> empty_as_nil(),
+      listing_id: listing_id |> empty_as_nil(),
+      seller_sku: seller_sku |> empty_as_nil(),
+      price: price |> empty_as_nil() |> nil_friendly(&coerce_as_float/1),
+      quantity: quantity,
+      open_date: open_date |> Timex.parse!(@time_format),
+      image_url: image_url |> empty_as_nil(),
+      item_is_marketplace: item_is_marketplace |> empty_as_nil() |> nil_friendly(&coerce_as_bool(&1, "y", "n")),
+      product_id_type: product_id_type |> empty_as_nil(),
+      zshop_shipping_fee: zshop_shipping_fee |> empty_as_nil(),
+      item_note: item_note |> empty_as_nil(),
+      item_condition: item_condition |> empty_as_nil(),
+      zshop_category1: zshop_category1 |> empty_as_nil(),
+      zshop_browse_path: zshop_browse_path |> empty_as_nil(),
+      zshop_storefront_feature: zshop_storefront_feature |> empty_as_nil(),
+      asin1: asin1 |> empty_as_nil(),
+      asin2: asin2 |> empty_as_nil(),
+      asin3: asin3 |> empty_as_nil(),
+      will_ship_internationally: will_ship_internationally |> empty_as_nil() |> nil_friendly(&coerce_as_bool(&1, "1")),
+      expedited_shipping: expedited_shipping |> empty_as_nil() |> nil_friendly(&coerce_as_bool(&1, "Y", "N")),
+      zshop_boldface: zshop_boldface |> empty_as_nil(),
+      product_id: product_id |> empty_as_nil(),
+      bid_for_featured_placement: bid_for_featured_placement |> empty_as_nil(),
+      add_delete: add_delete |> empty_as_nil(),
+      pending_quantity: pending_quantity |> empty_as_nil(),
+      fulfillment_channel: fulfillment_channel |> empty_as_nil(),
+      merchant_shipping_group: merchant_shipping_group |> empty_as_nil(),
+    }
+  end
+
+  defp nil_friendly(nil, _fun), do: nil
+  defp nil_friendly(x, fun), do: fun.(x)
+
+  @spec coerce_as_bool(String.t, String.t, String.t) :: boolean
+  defp coerce_as_bool(input, truthy, falsy) do
+    case input do
+      ^truthy -> true
+      ^falsy  -> false
+    end
+  end
+
+  @spec coerce_as_bool(String.t, String.t) :: boolean
+  defp coerce_as_bool(input, truthy) do
+    case input do
+      ^truthy -> true
+      _       -> false
+    end
+  end
+
+  @spec coerce_as_float(String.t) :: float
+  defp coerce_as_float(input) do
+    with {f, ""} <- Float.parse(input) do
+      f
+    end
+  end
+
+  defp empty_as_nil(""), do: nil
+  defp empty_as_nil(x), do: x
+
   @spec build_table(map, map) :: :ok | no_return
   defp build_table(table, row) do
-    row
-    |> Enum.reduce(table, fn {key, value}, table ->
-      IO.inspect(key, label: "key")
-      IO.inspect(value, label: "value")
-
-      Map.update(table, key, [value], &[value | &1])
-    end)
+    Map.Extra.merge_with_concat(table, row)
   end
 
   @spec save_table!(map) :: :ok | no_return
