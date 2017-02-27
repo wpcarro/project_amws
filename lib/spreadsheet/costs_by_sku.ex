@@ -37,22 +37,14 @@ defmodule Spreadsheet.CostsBySKU do
 
   @spec do_compile :: Spreadsheet.table | no_return
   defp do_compile do
-    skus =
-      MerchantListingsData.get_fields("seller-sku")
+    MerchantListingsData.get_report()
+    |> Stream.map(&to_row/1)
+  end
 
-    product_names =
-      MerchantListingsData.get_fields("item-name")
-
-    costs_per_unit =
-      MerchantListingsData.get_fields("price")
-      |> Stream.map(&compute_cost_per_unit/1)
-      |> Enum.into([])
-
-    %{
-      sku: [1, 2, 3],
-      product_name: product_names,
-      costs_per_unit: costs_per_unit,
-    }
+  defp to_row(record)
+  defp to_row(%MerchantListingsData{seller_sku: sku, item_name: name, price: price})
+  when is_binary(sku) do
+    [sku, name, compute_cost_per_unit(price)]
   end
 
   @spec assert_report_dependencies! :: :ok | no_return
@@ -64,11 +56,19 @@ defmodule Spreadsheet.CostsBySKU do
     end
   end
 
-  @spec compute_cost_per_unit(String.t) :: cost_per_unit
-  defp compute_cost_per_unit(price) do
+  @spec compute_cost_per_unit(float) :: cost_per_unit
+  defp compute_cost_per_unit(price) when is_float(price) do
     # raise("Not implemented")
     price
   end
+
+
+  # defimpl Savable do
+  # `sku` is the primary key
+  #   def to_sql(record) do
+  #     {@index, record.sku}
+  #   end
+  # end
 
 
 end

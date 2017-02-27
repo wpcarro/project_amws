@@ -73,6 +73,7 @@ defmodule Web.Report.MerchantListingsData do
     |> Stream.map(&remove_corrupt_string_data/1)
     |> Stream.drop(1)
     |> CSV.decode(headers: false, separator: ?\t)
+    |> Stream.map(&decode/1)
   end
 
   @spec get_fields(String.t) :: [String.t]
@@ -83,6 +84,7 @@ defmodule Web.Report.MerchantListingsData do
 
   @doc """
   Decodes a raw response from AMWS into `MerchantListingsData.t`
+
   """
   @time_format "{YYYY}-{0M}-{0D} {h24}:{m}:{s} {Zabbr}"
   @spec decode(String.t) :: t
@@ -190,5 +192,6 @@ defmodule Web.Report.MerchantListingsData do
     |> Enum.filter(&String.valid?/1)
     |> Enum.join("")
   end
+
 
 end
