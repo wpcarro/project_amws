@@ -4,6 +4,8 @@ defmodule Web.Report.MerchantListingsData do
 
   """
 
+  import Decoder.Helpers
+
   require Logger
   alias Web.Report
   alias __MODULE__
@@ -130,35 +132,6 @@ defmodule Web.Report.MerchantListingsData do
       merchant_shipping_group: merchant_shipping_group |> empty_as_nil(),
     }
   end
-
-  defp nil_friendly(nil, _fun), do: nil
-  defp nil_friendly(x, fun), do: fun.(x)
-
-  @spec coerce_as_bool(String.t, String.t, String.t) :: boolean
-  defp coerce_as_bool(input, truthy, falsy) do
-    case input do
-      ^truthy -> true
-      ^falsy  -> false
-    end
-  end
-
-  @spec coerce_as_bool(String.t, String.t) :: boolean
-  defp coerce_as_bool(input, truthy) do
-    case input do
-      ^truthy -> true
-      _       -> false
-    end
-  end
-
-  @spec coerce_as_float(String.t) :: float
-  defp coerce_as_float(input) do
-    with {f, ""} <- Float.parse(input) do
-      f
-    end
-  end
-
-  defp empty_as_nil(""), do: nil
-  defp empty_as_nil(x), do: x
 
   @spec build_table(map, map) :: :ok | no_return
   defp build_table(table, row) do

@@ -9,23 +9,37 @@ defmodule Spreadsheet.AdCostBySKU do
 
   @behaviour Spreadsheet
 
+  @type t :: %__MODULE__{
+    start_date: DateTime.t,
+    end_date: DateTime.t,
+    merchant_name: String.t,
+    sku: String.t,
+    clicks: integer,
+    impressions: integer,
+    ctr: float,
+    currency: String.t,
+    total_spend: float,
+    average_cpc: float,
+  }
 
-  @fields [
-    "start_date",
-    "end_date",
-    "merchant_name",
-    "sku",
-    "clicks",
-    "impressions",
-    "ctr",
-    "currency",
-    "total_spend",
-    "avg_cpc",
+  defstruct [
+    :start_date,
+    :end_date,
+    :merchant_name,
+    :sku,
+    :clicks,
+    :impressions,
+    :ctr,
+    :currency,
+    :total_spend,
+    :average_cpc,
   ]
+
 
 
   @spec compile :: Spreadsheet.table
   def compile do
-    true
   end
+
+
 end
