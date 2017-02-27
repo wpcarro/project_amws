@@ -93,4 +93,18 @@ defmodule Decoder.Helpers do
     end
   end
 
+
+  @doc """
+  Removes invalid characters from strings.
+
+  """
+  @spec remove_corrupt_string_data(String.t) :: String.t
+  def remove_corrupt_string_data(line) do
+    line
+    |> String.split("")
+    |> Enum.filter(&String.valid?/1)
+    |> Enum.join("")
+  end
+
+
 end

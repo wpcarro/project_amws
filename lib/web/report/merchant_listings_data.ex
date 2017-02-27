@@ -12,7 +12,7 @@ defmodule Web.Report.MerchantListingsData do
 
   @behaviour Report
 
-  @type t :: %{
+  @type t :: %__MODULE__{
     item_name: String.t, item_description: String.t, listing_id: String.t,
     seller_sku: String.t, price: float, quantity: non_neg_integer,
     open_date: DateTime.t, image_url: String.t, item_is_marketplace: boolean,
@@ -46,7 +46,6 @@ defmodule Web.Report.MerchantListingsData do
   Initializes the ETS table to store the downloaded Merchant Listings Data.
 
   """
-  @spec init :: :ok | no_return
   def init do
     with tid when is_integer(tid) <- :ets.new(@table_id, []) do
       get_report()
@@ -59,8 +58,7 @@ defmodule Web.Report.MerchantListingsData do
     end
   end
 
-  @spec get_report() :: Enumerable.t
-  def get_report() do
+  def get_report do
     filepath =
       if File.exists?(@merchant_listings_data) do
         @merchant_listings_data
@@ -78,6 +76,21 @@ defmodule Web.Report.MerchantListingsData do
     |> Stream.map(&decode/1)
   end
 
+  @spec get_and_save_merchant_listings_data :: :ok | no_return
+  defp get_and_save_merchant_listings_data do
+    Logger.info("[Report] Downloading Merchant Listings Data.")
+
+    file =
+      File.open!(@merchant_listings_data, [:write])
+
+    data =
+      Report.get_report_by_id(@merchant_listings_data_id)
+
+    IO.binwrite(file, data)
+    File.close(file)
+    Logger.info("[Report] Finished.")
+  end
+
   @spec get_fields(String.t) :: [String.t]
   def get_fields(field) do
     :ets.lookup(@table_id, field)
@@ -89,8 +102,8 @@ defmodule Web.Report.MerchantListingsData do
 
   """
   @time_format "{YYYY}-{0M}-{0D} {h24}:{m}:{s} {Zabbr}"
-  @spec decode(String.t) :: t
-  def decode(raw) do
+  @spec decode([String.t]) :: t
+  defp decode(raw) do
     [
       item_name, item_description, listing_id, seller_sku, price, quantity,
       open_date, image_url, item_is_marketplace, product_id_type,
@@ -141,29 +154,6 @@ defmodule Web.Report.MerchantListingsData do
   @spec save_table!(map) :: :ok | no_return
   defp save_table!(table) do
     :ets.insert(@table_id, table)
-  end
-
-  @spec get_and_save_merchant_listings_data() :: :ok | no_return
-  defp get_and_save_merchant_listings_data() do
-    Logger.info("[Report] Downloading Merchant Listings Data.")
-
-    file =
-      File.open!(@merchant_listings_data, [:write])
-
-    data =
-      Report.get_report_by_id(@merchant_listings_data_id)
-
-    IO.binwrite(file, data)
-    File.close(file)
-    Logger.info("[Report] Finished.")
-  end
-
-  @spec remove_corrupt_string_data(String.t) :: String.t
-  defp remove_corrupt_string_data(line) do
-    line
-    |> String.split("")
-    |> Enum.filter(&String.valid?/1)
-    |> Enum.join("")
   end
 
 

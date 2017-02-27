@@ -7,19 +7,20 @@ defmodule Web.Report do
   @type report :: map
   @typep xml :: any
 
-  import SweetXml
   alias Web
+  alias Web.Report.{MerchantListingsData,ReservedInventoryData}
 
-  alias Web.Report.MerchantListingsData
-  alias Web.Report.Orders
+  import SweetXml
 
   @callback get_report :: report
 
 
-  @spec merchant_listings_data() :: report
-  def merchant_listings_data() do
-    MerchantListingsData.get_report()
-  end
+  @spec merchant_listings_data :: report
+  defdelegate merchant_listings_data, to: MerchantListingsData, as: :get_report
+
+  @spec reserved_inventory_data :: report
+  defdelegate reserved_inventory_data, to: ReservedInventoryData, as: :get_report
+
 
   @spec get_all_reports() :: map
   def get_all_reports() do
@@ -27,6 +28,7 @@ defmodule Web.Report do
     |> SweetXml.parse()
     |> get_report_names_and_ids()
   end
+
 
   @spec get_report_by_id(String.t) :: [String.t]
   def get_report_by_id(id) do
