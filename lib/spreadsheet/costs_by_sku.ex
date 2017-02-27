@@ -7,18 +7,13 @@ defmodule Spreadsheet.CostsBySKU do
 
   alias Web.Spreadsheet
   alias Web.Report.MerchantListingsData
-  import Logger
 
   @behaviour Spreadsheet
 
-  @typep sku :: String.t
-  @typep product_name :: String.t
-  @typep cost_per_unit :: float
-
   @type t :: %__MODULE__{
-    sku: sku,
-    product_name: product_name,
-    cost_per_unit: cost_per_unit,
+    sku: String.t,
+    product_name: String.t,
+    cost_per_unit: float,
   }
 
   defstruct [
@@ -30,13 +25,6 @@ defmodule Spreadsheet.CostsBySKU do
 
   @spec compile :: Spreadsheet.table | no_return
   def compile do
-    assert_report_dependencies!()
-
-    do_compile()
-  end
-
-  @spec do_compile :: Spreadsheet.table | no_return
-  defp do_compile do
     MerchantListingsData.get_report()
     |> Stream.map(&to_row/1)
   end
@@ -47,28 +35,11 @@ defmodule Spreadsheet.CostsBySKU do
     [sku, name, compute_cost_per_unit(price)]
   end
 
-  @spec assert_report_dependencies! :: :ok | no_return
-  defp assert_report_dependencies! do
-    with :ok <- :ok do
-      :ok
-    else
-      _ -> Logger.warn("Trouble fetching dependencies for CostsBySKU Spreadsheet. Aborting.")
-    end
-  end
-
-  @spec compute_cost_per_unit(float) :: cost_per_unit
+  @spec compute_cost_per_unit(float) :: float
   defp compute_cost_per_unit(price) when is_float(price) do
     # raise("Not implemented")
     price
   end
-
-
-  # defimpl Savable do
-  # `sku` is the primary key
-  #   def to_sql(record) do
-  #     {@index, record.sku}
-  #   end
-  # end
 
 
 end
